@@ -1,0 +1,55 @@
+version: '3.9'
+
+services:
+  node:
+    container_name: ${NODE_CONTAINER_NAME}
+    hostname: 'api'
+    env_file:
+      - .env
+    restart: unless-stopped
+    build:
+      context: ./api
+    command: ${CMD}
+    ports:
+      - ${PORT}:${PORT}
+    volumes:
+      - ./api:/var/www/html/api
+      - /var/www/html/api/node_modules
+    networks:
+      - api-network
+    environment:
+      MYSQL_USER: ${DEMO_DB_USERNAME}
+      MYSQL_PASSWORD: ${DEMO_DB_PASSWORD}
+      MYSQL_DATABASE: ${DEMO_DB_NAME}
+      MYSQL_PORT: ${DEMO_DB_PORT}
+      MYSQL_HOST: ${DEMO_DB_HOST}
+    healthcheck:
+      test: wget --quiet --tries=1 --spider http://localhost:${PORT} || exit 1z
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  mysql:
+    container_name: ${MYSQL_CONTAINER_NAME}
+    image: mysql:5.7
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data/db:/var/lib/mysql
+    networks:
+      - api-network
+    environment:
+      MYSQL_USER: ${DEMO_DB_USERNAME}
+      MYSQL_PASSWORD: ${DEMO_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DEMO_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DEMO_DB_NAME}
+    ports:
+      - "3306:3306"
+
+networks:
+  api-network:
+    driver: bridge
+
+volumes:
+  data:
